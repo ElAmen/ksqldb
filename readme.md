@@ -168,6 +168,9 @@ In this case it will be automatically created because it doesn't exist yet, but 
 For JSON encoding, each row will be stored as a JSON object whose keys/values are column names/values. 
 For example: {"Id": 1, "User":"Amen", "Message": "Hello World"}
 
+[Check the documentation for more information about streams.](https://docs.ksqldb.io/en/latest/concepts/collections/streams/?_ga=2.207984017.2016512056.1703559960-674955265.1703559960)
+
+
 ```cmd
 
     CREATE STREAM TweetStream (Id INT, User VARCHAR, Message VARCHAR) WITH (kafka_topic='Tweet', value_format='json', partitions=1);
@@ -196,8 +199,9 @@ To make it more fun, let us also materialize a derived table (Table TweetView) t
 ```cmd
 
 CREATE TABLE TweetView AS
-  SELECT COLLECT_LIST(User) AS User,
-         COUNT(*) AS count
+  SELECT COUNT(*) AS MessageCount,
+         User,
+         COLLECT_LIST(Message) AS Messages,         
   FROM TweetCount
   GROUP BY User;
 
@@ -205,4 +209,47 @@ CREATE TABLE TweetView AS
 
 
 
-4. 
+4. Run a push query over the stream
+Now, let us run a push query over the stream. Run the given query using your interactive CLI session.
+This query will output all rows from the Tweet stream which contain "Hi".
+This query will never return until it's terminated. 
+It will perpetually push output rows to the client as events are written to the Tweet stream.
+
+```cmd
+
+SELECT * FROM TweetStream
+  WHERE Message LIKE "%hi%" 
+  EMIT CHANGES;
+
+```
+
+Leave this query running in the CLI session for now. 
+Next, we're going to write some data into the Tweet stream so that the query begins producing output.
+
+
+5. Populate the stream with events
+Run each of the given INSERT statements within the new CLI session, and keep an eye on the CLI session from (4) as you do.
+
+The push query will output matching rows in real time as soon as they're written to the Tweet stream.
+
+```cmd
+
+    INSERT INTO TweetStream (id, User, Message) VALUES (1, "Amen", "Hi ksqlDB");
+    INSERT INTO TweetStream (id, User, Message) VALUES (2, "ksqlDb", "Hello Amen");
+    INSERT INTO TweetStream (id, User, Message) VALUES (3, "Amen", "Hi Everyone");
+    INSERT INTO TweetStream (id, User, Message) VALUES (4, "Everyone", "Hi, It looks like it is working");
+    INSERT INTO TweetStream (id, User, Message) VALUES (5, "Amen", "Yeah, we made it to the highest pick.");
+
+```
+
+6. Run a Pull query against the materialized view
+Finally, we run a pull query against the materialized view to retrieve all the Users that are more than 2 tweet count.
+
+In contrast to the previous push query which runs continuously, 
+the pull query follows a traditional request-response model retrieving the latest result from the materialized view.
+
+```cmd
+
+    SELECT * from TweetView WHERE Count >= 2;
+
+```
