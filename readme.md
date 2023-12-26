@@ -12,29 +12,21 @@ Tools:
 - Schema-registry
 - Ksqldb-server
 - Ksqldb-cli
+- Visual Studio 2022 
 
 Optional tools:
 - kafdrop
 - MySQL
 
-```yaml
+Get standalone ksqlDB 
+
+Create a file docker-compose.yml and put in the code below
+
+```yml
 
 version: '2'
 
 services:
-  mysql:
-    image: mysql:8.0.19
-    hostname: mysql
-    container_name: mysql
-    ports:
-      - "3306:3306"
-    environment:
-      MYSQL_ROOT_PASSWORD: mysql-pw
-      MYSQL_DATABASE: call-center
-      MYSQL_USER: example-user
-      MYSQL_PASSWORD: example-pw
-    volumes:
-      - "./mysql/custom-config.cnf:/etc/mysql/conf.d/custom-config.cnf"
 
   zookeeper:
     image: confluentinc/cp-zookeeper:7.4.0
@@ -63,20 +55,6 @@ services:
       KAFKA_GROUP_INITIAL_REBALANCE_DELAY_MS: 0
       KAFKA_TRANSACTION_STATE_LOG_MIN_ISR: 1
       KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR: 1
-
-
-  kafdrop:
-    image: obsidiandynamics/kafdrop
-    restart: "no"
-    ports:
-      - "9100:9100"
-    environment:
-      KAFKA_BROKERCONNECT: "broker:9092"
-      JVM_OPTS: "-Xms16M -Xmx48M -Xss180K -XX:-TieredCompilation -XX:+UseStringDeduplication -noverify"
-    depends_on:
-      - broker
-  
-  
 
   schema-registry:
     image: confluentinc/cp-schema-registry:7.4.0
@@ -131,6 +109,48 @@ services:
     entrypoint: /bin/sh
     tty: true
 
+  kafdrop:
+    image: obsidiandynamics/kafdrop
+    restart: "no"
+    ports:
+      - "9000:9000"
+    environment:
+      KAFKA_BROKERCONNECT: "broker:9092"
+    depends_on:
+      - broker
+
+  mysql:
+    image: mysql:8.0.19
+    hostname: mysql
+    container_name: mysql
+    ports:
+      - "3306:3306"
+    environment:
+      MYSQL_ROOT_PASSWORD: mysql-pw
+      MYSQL_DATABASE: call-center
+      MYSQL_USER: example-user
+      MYSQL_PASSWORD: example-pw
+    volumes:
+      - "./mysql/custom-config.cnf:/etc/mysql/conf.d/custom-config.cnf"
+ 
+```
+
+In a terminal navigate to the docker-compose folder and execute
+
+```cmd
+
+    docker-compose up
+
 ```
 
 
+## Steps
+Now that we have the necessary infrastructure we can start.
+
+1. Start ksqlDB's interactive CLI
+
+```cmd
+
+    docker exec -it ksqldb-cli ksql http://ksqldb-server:8088
+
+```
