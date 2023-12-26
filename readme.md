@@ -317,3 +317,8 @@ Console.WriteLine("Press any key to stop the subscription");
 
 Console.ReadKey();
 ```
+
+## Conclusion
+That's how we query data from Kafka directly.
+
+Happy coding :)
