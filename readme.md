@@ -265,7 +265,7 @@ the pull query follows a traditional request-response model retrieving the lates
 3. Create this model
 
 ```c#
- public class Tweet : Record
+ public class TweetStream : Record
  {
      public int Id { get; set; }
      public string User { get; set; }
