@@ -18,7 +18,6 @@ using var subscription = context.CreateQueryStream<TweetStream>()
     .WithOffsetResetPolicy(AutoOffsetReset.Latest)
     .Where(p => p.User.Equals("Amen"))
       .Select(l => new { l.Id, l.User, l.Message })
-      .Take(2)
       .Subscribe(
           tweetMessage =>
           {
