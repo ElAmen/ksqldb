@@ -173,7 +173,8 @@ For example: {"Id": 1, "User":"Amen", "Message": "Hello World"}
 
 ```cmd
 
-    CREATE STREAM TweetStream (Id INT, User VARCHAR, Message VARCHAR) WITH (kafka_topic='Tweet', value_format='json', partitions=1);
+    CREATE STREAM TweetStream (Id INT, User VARCHAR, Message VARCHAR) 
+    WITH (kafka_topic='Tweet', value_format='json', partitions=1);
 
 ```
 
@@ -201,8 +202,8 @@ To make it more fun, let us also materialize a derived table (Table TweetView) t
 CREATE TABLE TweetView AS
   SELECT COUNT(*) AS MessageCount,
          User,
-         COLLECT_LIST(Message) AS Messages,         
-  FROM TweetCount
+         COLLECT_LIST(Message) AS Messages       
+  FROM TweetStream
   GROUP BY User;
 
 ````
@@ -218,7 +219,7 @@ It will perpetually push output rows to the client as events are written to the 
 ```cmd
 
 SELECT * FROM TweetStream
-  WHERE Message LIKE "%hi%" 
+  WHERE Message LIKE '%hi%' OR Message LIKE '%Hi%'
   EMIT CHANGES;
 
 ```
@@ -234,11 +235,11 @@ The push query will output matching rows in real time as soon as they're written
 
 ```cmd
 
-    INSERT INTO TweetStream (id, User, Message) VALUES (1, "Amen", "Hi ksqlDB");
-    INSERT INTO TweetStream (id, User, Message) VALUES (2, "ksqlDb", "Hello Amen");
-    INSERT INTO TweetStream (id, User, Message) VALUES (3, "Amen", "Hi Everyone");
-    INSERT INTO TweetStream (id, User, Message) VALUES (4, "Everyone", "Hi, It looks like it is working");
-    INSERT INTO TweetStream (id, User, Message) VALUES (5, "Amen", "Yeah, we made it to the highest pick.");
+    INSERT INTO TweetStream (id, User, Message) VALUES (1, 'Amen', 'Hi ksqlDB');
+    INSERT INTO TweetStream (id, User, Message) VALUES (2, 'ksqlDb', 'Hello Amen');
+    INSERT INTO TweetStream (id, User, Message) VALUES (3, 'Amen', 'Hi Everyone');
+    INSERT INTO TweetStream (id, User, Message) VALUES (4, 'Everyone', 'Hi, It looks like it is working');
+    INSERT INTO TweetStream (id, User, Message) VALUES (5, 'Amen', 'Yeah, we made it to the highest pick.');
 
 ```
 
@@ -250,6 +251,8 @@ the pull query follows a traditional request-response model retrieving the lates
 
 ```cmd
 
-    SELECT * from TweetView WHERE Count >= 2;
+    SELECT * from TweetView WHERE MessageCount >= 2;
 
 ```
+
+
