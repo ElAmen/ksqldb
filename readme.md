@@ -1,4 +1,4 @@
-# .NET with KSQL-DB  
+# .NET with ksqlDB  
 
 ## Intro
 Contemplating the capabilities of Apache Kafka, I found myself pondering: Is it possible to query data directly within Kafka? 
@@ -148,9 +148,61 @@ In a terminal navigate to the docker-compose folder and execute
 Now that we have the necessary infrastructure we can start.
 
 1. Start ksqlDB's interactive CLI
+ksqlDB runs as a server which clients connect to in order to issue queries.
+
+Run this command to connect to the ksqlDB server and enter an interactive command-line interface (CLI) session.
 
 ```cmd
 
     docker exec -it ksqldb-cli ksql http://ksqldb-server:8088
 
 ```
+
+2. Create a stream
+The first thing we're going to do is create a stream. A stream essentially associates a schema with an underlying Kafka topic. 
+Here's what each parameter in the *CREATE STREAM* statement does:
+
+*kafka_topic* - Name of the Kafka topic underlying the stream. 
+In this case it will be automatically created because it doesn't exist yet, but streams may also be created over topics that already exist.
+*value_format* - Encoding of the messages stored in the Kafka topic. 
+For JSON encoding, each row will be stored as a JSON object whose keys/values are column names/values. 
+For example: {"Id": 1, "User":"Amen", "Message": "Hello World"}
+
+```cmd
+
+    CREATE STREAM TweetStream (Id INT, User VARCHAR, Message VARCHAR) WITH (kafka_topic='Tweet', value_format='json', partitions=1);
+
+```
+
+
+3. Create materialized views
+We might also want to keep track of the latest tweets using a materialized view. 
+For this we create a table TweetTable by issuing a SELECT statement over the previously created stream. 
+Note that the table will be incrementally updated as new tweet data arrives. 
+We use the LATEST_BY_OFFSET aggregate function to denote the fact that we are only interested in the latest tweets.
+
+```cmd
+
+CREATE TABLE TweetTable AS
+SELECT  LATEST_BY_OFFSET(Id), User
+FROM TweetStream
+GROUP BY User
+EMIT CHANGES;
+
+```
+
+To make it more fun, let us also materialize a derived table (Table TweetView) that captures how many tweets a user has posted.
+
+```cmd
+
+CREATE TABLE TweetView AS
+  SELECT COLLECT_LIST(User) AS User,
+         COUNT(*) AS count
+  FROM TweetCount
+  GROUP BY User;
+
+````
+
+
+
+4. 
