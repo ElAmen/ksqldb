@@ -7,10 +7,10 @@ using System.Threading.Tasks;
 
 namespace Basics.Models
 {
-    public class Tweet : Record
+    public class TweetStream : Record
     {
         public int Id { get; set; }
-
+        public string User { get; set; }
         public string Message { get; set; }
     }
 }

@@ -3,25 +3,26 @@ using ksqlDB.RestApi.Client.KSql.Query.Context;
 using ksqlDB.RestApi.Client.KSql.Query.Options;
 using ksqlDB.RestApi.Client.KSql.Linq;
 using Basics.Models;
+using System.Runtime.CompilerServices;
 
 var ksqlDbUrl = @"http://localhost:8088";
 
 var contextOptions = new KSqlDBContextOptions(ksqlDbUrl)
 {
-    ShouldPluralizeFromItemName = true
+    ShouldPluralizeFromItemName = false
 };
 
 await using var context = new KSqlDBContext(contextOptions);
 
-using var subscription = context.CreateQueryStream<Tweet>()
+using var subscription = context.CreateQueryStream<TweetStream>()
     .WithOffsetResetPolicy(AutoOffsetReset.Latest)
-    .Where(p => p.Message == "Hi" )
-      .Select(l => new { l.Message, l.Id })
+    .Where(p => p.User.Equals("Amen"))
+      .Select(l => new { l.Id, l.User, l.Message })
       .Take(2)
       .Subscribe(
           tweetMessage =>
           {
-              Console.WriteLine($"{nameof(Tweet)}: {tweetMessage.Id} - {tweetMessage.Message}");
+              Console.WriteLine($"{nameof(TweetStream)}: {tweetMessage.Id} - {tweetMessage.User} - {tweetMessage.Message}");
           }, 
           error => 
           { 

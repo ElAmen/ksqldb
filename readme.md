@@ -144,12 +144,11 @@ In a terminal navigate to the docker-compose folder and execute
 ```
 
 
-## Steps
+## Basic ksql
 Now that we have the necessary infrastructure we can start.
 
 1. Start ksqlDB's interactive CLI
 ksqlDB runs as a server which clients connect to in order to issue queries.
-
 Run this command to connect to the ksqlDB server and enter an interactive command-line interface (CLI) session.
 
 ```cmd
@@ -161,7 +160,6 @@ Run this command to connect to the ksqlDB server and enter an interactive comman
 2. Create a stream
 The first thing we're going to do is create a stream. A stream essentially associates a schema with an underlying Kafka topic. 
 Here's what each parameter in the *CREATE STREAM* statement does:
-
 *kafka_topic* - Name of the Kafka topic underlying the stream. 
 In this case it will be automatically created because it doesn't exist yet, but streams may also be created over topics that already exist.
 *value_format* - Encoding of the messages stored in the Kafka topic. 
@@ -194,7 +192,6 @@ GROUP BY User
 EMIT CHANGES;
 
 ```
-
 To make it more fun, let us also materialize a derived table (Table TweetView) that captures how many tweets a user has posted.
 
 ```cmd
@@ -230,7 +227,6 @@ Next, we're going to write some data into the Tweet stream so that the query beg
 
 5. Populate the stream with events
 Run each of the given INSERT statements within the new CLI session, and keep an eye on the CLI session from (4) as you do.
-
 The push query will output matching rows in real time as soon as they're written to the Tweet stream.
 
 ```cmd
@@ -245,7 +241,6 @@ The push query will output matching rows in real time as soon as they're written
 
 6. Run a Pull query against the materialized view
 Finally, we run a pull query against the materialized view to retrieve all the Users that are more than 2 tweet count.
-
 In contrast to the previous push query which runs continuously, 
 the pull query follows a traditional request-response model retrieving the latest result from the materialized view.
 
@@ -256,3 +251,69 @@ the pull query follows a traditional request-response model retrieving the lates
 ```
 
 
+## .NET & ksqlDB
+
+1. Create a basic .NET console app
+2. Install Ksql Client
+
+```xml
+  <ItemGroup>
+    <PackageReference Include="ksqlDb.RestApi.Client" Version="3.4.0" />
+  </ItemGroup>
+```
+
+3. Create this model
+
+```c#
+ public class Tweet : Record
+ {
+     public int Id { get; set; }
+     public string User { get; set; }
+     public string Message { get; set; }
+ }
+ ```
+
+ 4. Add this the the program file
+ ```c#
+// See https://aka.ms/new-console-template for more information
+using ksqlDB.RestApi.Client.KSql.Query.Context;
+using ksqlDB.RestApi.Client.KSql.Query.Options;
+using ksqlDB.RestApi.Client.KSql.Linq;
+using Basics.Models;
+using System.Runtime.CompilerServices;
+
+// Connect to ksqlDB
+var ksqlDbUrl = @"http://localhost:8088";
+
+var contextOptions = new KSqlDBContextOptions(ksqlDbUrl)
+{
+    ShouldPluralizeFromItemName = false
+};
+
+await using var context = new KSqlDBContext(contextOptions);
+
+// Subscribe and consume
+using var subscription = context.CreateQueryStream<TweetStream>()
+    .WithOffsetResetPolicy(AutoOffsetReset.Latest)
+    .Where(p => p.User.Equals("Amen"))
+      .Select(l => new { l.Id, l.User, l.Message })
+      .Take(2)
+      .Subscribe(
+          tweetMessage =>
+          {
+              Console.WriteLine($"{nameof(TweetStream)}: {tweetMessage.Id} - {tweetMessage.User} - {tweetMessage.Message}");
+          }, 
+          error => 
+          { 
+              Console.WriteLine($"Exception: {error.Message}"); 
+          }, 
+          () =>
+          {
+              Console.WriteLine("Completed");
+          }
+      );
+
+Console.WriteLine("Press any key to stop the subscription");
+
+Console.ReadKey();
+```
