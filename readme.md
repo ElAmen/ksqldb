@@ -297,16 +297,21 @@ using var subscription = context.CreateQueryStream<TweetStream>()
     .WithOffsetResetPolicy(AutoOffsetReset.Latest)
     .Where(p => p.User.Equals("Amen"))
       .Select(l => new { l.Id, l.User, l.Message })
-      .Take(2)
+      //After 10 consumptions is will not accept payloads no more. 
+      //Uncomment to test
+      //.Take(10)
       .Subscribe(
+          //Do whatever you want with the payload here
           tweetMessage =>
           {
               Console.WriteLine($"{nameof(TweetStream)}: {tweetMessage.Id} - {tweetMessage.User} - {tweetMessage.Message}");
           }, 
+          // This handles exception
           error => 
           { 
               Console.WriteLine($"Exception: {error.Message}"); 
           }, 
+          //This runs on every successful execution
           () =>
           {
               Console.WriteLine("Completed");

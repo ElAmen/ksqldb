@@ -13,4 +13,12 @@ namespace Basics.Models
         public string User { get; set; }
         public string Message { get; set; }
     }
+
+
+    public class TweetView : Record
+    {
+        public int MessageCount { get; set; }
+        public string User { get; set; }
+        public string Messages { get; set; }
+    }
 }
